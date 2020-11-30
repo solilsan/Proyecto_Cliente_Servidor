@@ -5,6 +5,8 @@ import java.io.*;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.util.Scanner;
 
 public class Client {
@@ -19,24 +21,19 @@ public class Client {
 
                 try {
 
-                    System.out.println("1-Iniciar sessión.\n2-Registrarse.\n3-Salir.");
+                    System.out.println("1-Registrarse.\n2-Salir.");
                     Scanner scanner = new Scanner(System.in);
 
                     switch (Integer.parseInt(scanner.nextLine())) {
-                        case 1 -> {
-                            System.out.println("Iniciar sessión.");
-                            System.out.println("Nink: ");
-                            String dni = scanner.nextLine();
-                            System.out.println("Contraseña: ");
-                            String password = scanner.next();
-                        }
-                        case 2 -> registro(server, scanner);
-                        case 3 -> server.close();
+                        case 1 -> registro(server, scanner);
+                        case 2 -> server.close();
                         default -> {
-                            System.out.println("introduce un número del 1-3 por favor.");
+                            System.out.println("introduce un número del 1-2 por favor.");
                             error = true;
                         }
                     }
+
+                    reglasJuego(server);
 
                 } catch (NumberFormatException e) {
                     System.out.println("Introduce un número por favor.");
@@ -84,10 +81,10 @@ public class Client {
             do {
                 System.out.print("Nombre: ");
                 String nombre = scanner.nextLine();
-                byte[] dniCifrado = desCipher.doFinal(nombre.getBytes());
+                byte[] nombreCifrado = desCipher.doFinal(nombre.getBytes());
 
                 ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
-                set.writeObject(dniCifrado);
+                set.writeObject(nombreCifrado);
 
                 correct = (boolean) get.readObject();
 
@@ -99,11 +96,11 @@ public class Client {
 
             do {
                 System.out.print("Apellido: ");
-                String nombre = scanner.nextLine();
-                byte[] dniCifrado = desCipher.doFinal(nombre.getBytes());
+                String apellido = scanner.nextLine();
+                byte[] apellidoCifrado = desCipher.doFinal(apellido.getBytes());
 
                 ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
-                set.writeObject(dniCifrado);
+                set.writeObject(apellidoCifrado);
 
                 correct = (boolean) get.readObject();
 
@@ -116,10 +113,10 @@ public class Client {
             do {
                 System.out.print("Edad: ");
                 String edad = scanner.nextLine();
-                byte[] dniCifrado = desCipher.doFinal(edad.getBytes());
+                byte[] edadCifrado = desCipher.doFinal(edad.getBytes());
 
                 ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
-                set.writeObject(dniCifrado);
+                set.writeObject(edadCifrado);
 
                 correct = (boolean) get.readObject();
 
@@ -129,10 +126,54 @@ public class Client {
 
             } while (!correct);
 
-            get.close();
+            do {
+                System.out.print("Contraseña: ");
+                String password = scanner.nextLine();
+                byte[] passwordCifrado = desCipher.doFinal(password.getBytes());
+
+                ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
+                set.writeObject(passwordCifrado);
+
+                correct = (boolean) get.readObject();
+
+                if (!correct) {
+                    System.out.println("La contraseña debe tener al entre 8 y 16 caracteres, al menos un dígito, al menos una minúscula y al menos una mayúscula.\n" +
+                            "NO puede tener otros símbolos.");
+                }
+
+            } while (!correct);
 
         } catch (Exception e) {
             System.out.println("[Registro Error] " + e.getMessage());
+        }
+
+    }
+
+    public static void reglasJuego(Socket server) {
+
+        try {
+
+            ObjectInputStream get = new ObjectInputStream(server.getInputStream());
+
+            Signature verificadsa = Signature.getInstance("SHA1withRSA");
+            verificadsa.initVerify((PublicKey) get.readObject());
+            byte[] reglasJuego = (byte[]) get.readObject();
+            verificadsa.update(reglasJuego);
+
+            boolean check = verificadsa.verify((byte[]) get.readObject());
+
+            if (check) {
+                System.out.println("\nReglas del juego validadas por el Jugador:");
+                System.out.println(new String(reglasJuego));
+            }
+            else {
+                System.out.println("Intento de falsificación de reglas de un servidor desconocido");
+            }
+
+            get.close();
+
+        } catch (Exception e) {
+            System.out.println("[ReglasJuego Error] " + e.getMessage());
         }
 
     }
