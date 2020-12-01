@@ -10,10 +10,12 @@ public class Server {
         try {
             ServerSocket server = new ServerSocket(6000);
             System.out.println("Server ON");
-            Socket client = server.accept();
 
-            HiloServer hs = new HiloServer(client);
-            hs.start();
+            while (true) {
+                Socket client = server.accept();
+                HiloServer hs = new HiloServer(client);
+                hs.start();
+            }
 
         } catch (Exception IOe) {
             System.out.println("[Server Error] " + IOe.getMessage());

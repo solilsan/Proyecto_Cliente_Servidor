@@ -5,11 +5,12 @@ import java.io.*;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.security.PublicKey;
-import java.security.Signature;
+import java.security.*;
 import java.util.Scanner;
 
 public class Client {
+
+    static boolean validarReglas = false;
 
     public static void main(String[] args) {
 
@@ -23,6 +24,7 @@ public class Client {
 
                     System.out.println("1-Registrarse.\n2-Salir.");
                     Scanner scanner = new Scanner(System.in);
+                    error = false;
 
                     switch (Integer.parseInt(scanner.nextLine())) {
                         case 1 -> registro(server, scanner);
@@ -33,7 +35,13 @@ public class Client {
                         }
                     }
 
-                    reglasJuego(server);
+                    if (!error) {
+                        reglasJuego(server);
+
+                        if (validarReglas) {
+                            empezarJuego(server);
+                        }
+                    }
 
                 } catch (NumberFormatException e) {
                     System.out.println("Introduce un número por favor.");
@@ -51,6 +59,7 @@ public class Client {
 
     }
 
+    // Validación de datos del juegador contra el servidor (los datos se envian con cifrado simetrico)
     public static void registro(Socket server ,Scanner scanner) {
 
         try {
@@ -149,6 +158,7 @@ public class Client {
 
     }
 
+    // Reglas del juego firmada por el servidor y comprobadas por el cliente (se comprueba mediante firma digital)
     public static void reglasJuego(Socket server) {
 
         try {
@@ -163,17 +173,86 @@ public class Client {
             boolean check = verificadsa.verify((byte[]) get.readObject());
 
             if (check) {
-                System.out.println("\nReglas del juego validadas por el Jugador:");
+                System.out.println("\nReglas del juego del servidor validadas por el Jugador:");
                 System.out.println(new String(reglasJuego));
+
+                // Si los datos son correctos empezamos el juego
+                validarReglas = true;
+
             }
             else {
-                System.out.println("Intento de falsificación de reglas de un servidor desconocido");
+                validarReglas = false;
+                System.out.println("Intento de falsificación de reglas de un servidor desconocido.");
+                System.out.println("Se detiende la comunicación con el servidor por seguridad.");
             }
-
-            get.close();
 
         } catch (Exception e) {
             System.out.println("[ReglasJuego Error] " + e.getMessage());
+        }
+
+    }
+
+    public static void empezarJuego(Socket server) {
+
+        try {
+
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(2048);
+            KeyPair par = keyGen.generateKeyPair();
+            PrivateKey claveprivClient = par.getPrivate();
+            PublicKey clavepubClient = par.getPublic();
+
+            ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
+            set.writeObject(clavepubClient); // Envio mi clave publica al servidor
+
+            Cipher desCipherClient = Cipher.getInstance("RSA");
+            desCipherClient.init(Cipher.DECRYPT_MODE, claveprivClient);
+
+            ObjectInputStream get = new ObjectInputStream(server.getInputStream());
+            byte[] mensajeCifradoBytes = (byte[]) get.readObject();
+            String mensajeDescifrado = new String(desCipherClient.doFinal(mensajeCifradoBytes));
+            System.out.println(mensajeDescifrado);
+
+            Cipher desCipherServer = Cipher.getInstance("RSA");
+            desCipherServer.init(Cipher.ENCRYPT_MODE, (Key) get.readObject()); // El servidor me envia su clave publica
+
+            // Respuesta
+            Scanner teclado = new Scanner(System.in);
+            String mensaje;
+
+            System.out.print("Respuesta: ");
+            mensaje = teclado.nextLine();
+            byte[] mensajeCifra = desCipherServer.doFinal(mensaje.getBytes());
+            // Enviar respuesta al servidor
+            set.writeObject(mensajeCifra);
+
+            boolean finJuego = false;
+            do {
+
+                mensajeCifradoBytes = (byte[]) get.readObject();
+                mensajeDescifrado = new String(desCipherClient.doFinal(mensajeCifradoBytes));
+                System.out.println(mensajeDescifrado);
+
+                if (!mensajeDescifrado.substring(0, 15).equalsIgnoreCase("Juego terminado")) {
+                    System.out.print("Respuesta: ");
+                    mensaje = teclado.nextLine();
+                    mensajeCifra = desCipherServer.doFinal(mensaje.getBytes());
+                    set.writeObject(mensajeCifra);
+                }
+                else {
+                    finJuego = true;
+                }
+
+            } while (!mensaje.equalsIgnoreCase("end") && !finJuego);
+
+            if (mensaje.equalsIgnoreCase("end")) {
+                mensajeCifradoBytes = (byte[]) get.readObject();
+                mensajeDescifrado = new String(desCipherClient.doFinal(mensajeCifradoBytes));
+                System.out.println(mensajeDescifrado);
+            }
+
+        } catch (Exception e) {
+            System.out.println("[EmpezarJuego Error] " + e.getMessage());
         }
 
     }
