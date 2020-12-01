@@ -176,8 +176,21 @@ public class Client {
                 System.out.println("\nReglas del juego del servidor validadas por el Jugador:");
                 System.out.println(new String(reglasJuego));
 
-                // Si los datos son correctos empezamos el juego
-                validarReglas = true;
+                System.out.println("1-Ponga si para poder accptar las reglas y continuar con el juego, ponga cualquier otra cosa para salir.");
+                System.out.print("Respuesta: ");
+                Scanner teclado = new Scanner(System.in);
+                String mensaje = teclado.nextLine();
+
+                ObjectOutputStream set = new ObjectOutputStream(server.getOutputStream());
+                if (mensaje.equalsIgnoreCase("si")) {
+                    // Si los datos son correctos empezamos el juego
+                    set.writeObject(true);
+                    validarReglas = true;
+                }
+                else {
+                    set.writeObject(false);
+                    validarReglas = false;
+                }
 
             }
             else {

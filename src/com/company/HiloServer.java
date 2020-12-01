@@ -14,6 +14,7 @@ public class HiloServer extends Thread{
     private final Socket client;
     private int puntos;
     private String dniJugador;
+    private boolean reglasAceptadas;
 
     public HiloServer(Socket client) {
         this.client = client;
@@ -26,7 +27,9 @@ public class HiloServer extends Thread{
 
             validarDatosJugador();
             validarReglasdelJuego();
-            empezarJuego();
+            if (this.reglasAceptadas) {
+                empezarJuego();
+            }
 
             client.close();
 
@@ -139,7 +142,7 @@ public class HiloServer extends Thread{
     }
 
     // Reglas del juego firmada por el servidor y comprobadas por el cliente (se comprueba mediante firma digital)
-    public void validarReglasdelJuego() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, IOException {
+    public void validarReglasdelJuego() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, IOException, ClassNotFoundException {
 
         ObjectOutputStream setReglas = new ObjectOutputStream(client.getOutputStream());
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
@@ -162,6 +165,10 @@ public class HiloServer extends Thread{
         setReglas.writeObject(clavepub);
         setReglas.writeObject(mensaje.getBytes());
         setReglas.writeObject(firma);
+
+        ObjectInputStream getReglas = new ObjectInputStream(client.getInputStream());
+
+        this.reglasAceptadas = (boolean) getReglas.readObject();
 
     }
 
