@@ -39,6 +39,9 @@ public class HiloServer extends Thread{
 
     }
 
+    /**
+     * Esta función nos permite validar los datos del jugador
+     */
     // Validación de datos del juegador contra el servidor (los datos se envian con cifrado simetrico)
     public void validarDatosJugador() throws NoSuchAlgorithmException, IOException, NoSuchPaddingException, InvalidKeyException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException {
 
@@ -141,6 +144,9 @@ public class HiloServer extends Thread{
 
     }
 
+    /**
+     * Esta función nos permite enviar las reglas al jugador y que este las valide.
+     */
     // Reglas del juego firmada por el servidor y comprobadas por el cliente (se comprueba mediante firma digital)
     public void validarReglasdelJuego() throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, IOException, ClassNotFoundException {
 
@@ -172,6 +178,9 @@ public class HiloServer extends Thread{
 
     }
 
+    /**
+     * Aquí es donde empezamos el juego, enviamos la pregunta con sus respuestas con cifrado asimetrico al jugador
+     */
     public void empezarJuego() {
 
         try {
@@ -221,6 +230,7 @@ public class HiloServer extends Thread{
             }
             else {
 
+                // Envia la puntuación al jugador si el juego termina por el jugando escribiendo end
                 mensaje = "Juego terminado"
                         + "\nDni Jugador: " + this.dniJugador
                         + "\nPuntos: " + this.puntos;
@@ -274,6 +284,7 @@ public class HiloServer extends Thread{
 
                             crearPregunta(mensaje, "3", set, get, desCipherClient, desCipherServer);
 
+                            // Envia la puntuación al jugador si el juego termina por la ultima pregunta
                             mensaje = "Juego terminado"
                                     + "\nDni Jugador: " + this.dniJugador
                                     + "\nPuntos: " + this.puntos;
@@ -294,6 +305,9 @@ public class HiloServer extends Thread{
 
     }
 
+    /**
+     * Aquí generamos las preguntas
+     */
     public boolean crearPregunta(String pregunta, String respuestaC, ObjectOutputStream set, ObjectInputStream get, Cipher desCipherClient, Cipher desCipherServer) throws BadPaddingException, IllegalBlockSizeException, IOException, ClassNotFoundException {
 
         boolean finJuego;
@@ -315,6 +329,7 @@ public class HiloServer extends Thread{
         }
         else {
 
+            // Envia la puntuación al jugador si el juego termina por el jugando escribiendo end
             pregunta = "Juego terminado"
                     + "\nDni Jugador: " + this.dniJugador
                     + "\nPuntos: " + this.puntos;
