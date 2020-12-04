@@ -12,6 +12,9 @@ public class Client {
 
     static boolean validarReglas = false;
 
+    /**
+     * @param args Main
+     */
     public static void main(String[] args) {
 
         try {
@@ -59,6 +62,9 @@ public class Client {
 
     }
 
+    /**
+     * Esta función nos permite realziar el registro, enviamos los datos al servidor y este lo valida
+     */
     // Validación de datos del juegador contra el servidor (los datos se envian con cifrado simetrico)
     public static void registro(Socket server ,Scanner scanner) {
 
@@ -158,6 +164,10 @@ public class Client {
 
     }
 
+    /**
+     * Esta función nos permite validar las reglas del juego, el servidor nos envia las normas del juego cifradas con firma digital
+     * y el jugador comprueba esas normas y si las acepta o no.
+     */
     // Reglas del juego firmada por el servidor y comprobadas por el cliente (se comprueba mediante firma digital)
     public static void reglasJuego(Socket server) {
 
@@ -205,6 +215,11 @@ public class Client {
 
     }
 
+    /**
+     * Esta función nos permite empezar el juego, en servidor nos envia la pregunta con cifrado asimetrico
+     * El jugador responde a la pregunta y envia la respuesta al servidor con cifrado asimetrico
+     */
+    // Recibo las preguntas del servidor con cifrado asimetrico y envio la respuesta al servidor con cifrado asimetrico
     public static void empezarJuego(Socket server) {
 
         try {
